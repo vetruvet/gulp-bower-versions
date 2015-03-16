@@ -1,49 +1,78 @@
-// through2 is a thin wrapper around node transform streams
-var through = require('through2');
-var gutil = require('gulp-util');
-var PluginError = gutil.PluginError;
+/*
+ * grunt-bower-versions
+ * https://github.com/vetruvet/grunt-bower-versions
+ *
+ * Copyright (c) 2015 Valeriy Trubachev
+ * Licensed under the MIT license.
+ */
 
-// Consts
-const PLUGIN_NAME = 'gulp-bower-versions';
+'use strict';
 
-function prefixStream(prefixText) {
-  var stream = through();
-  stream.write(prefixText);
-  return stream;
-}
+module.exports = function (options) {
 
-// Plugin level function(dealing with files)
-function gulpPrefixer(prefixText) {
+  // Consts
+  var PLUGIN_NAME = 'gulp-bower-versions';
 
-  if (!prefixText) {
-    throw new PluginError(PLUGIN_NAME, 'Missing prefix text!');
-  }
-  prefixText = new Buffer(prefixText); // allocate ahead of time
+  // through2 is a thin wrapper around node transform streams
+  var through = require('through2');
+  var gutil = require('gulp-util');
+  var fs = require('fs');
+  var PluginError = gutil.PluginError;
 
-  // Creating a stream through which each file will pass
-  return through.obj(function(file, enc, cb) {
-    if (file.isNull()) {
-      // return empty file
-      cb(null, file);
-    }
-    if (file.isBuffer()) {
-      file.contents = Buffer.concat([prefixText, file.contents]);
-    }
-    if (file.isStream()) {
-      file.contents = file.contents.pipe(prefixStream(prefixText));
-    }
+  options = options || {};
+  options.variable = options.variable || false;
 
-    cb(null, file);
+  var versions = {}, stream;
 
-  });
+  var readBowerJson = function (path) {
+    var bower_json = require(path);
+    versions[bower_json.name] = bower_json.version;
+  };
 
-};
-
-// Exporting the plugin main function
-module.exports = function () {
-  return through.obj(function (file, enc, cb) {
+  var readVersions = function (file, enc, cb) {
     var bower_dir = 'bower_components';
-
     if (fs.existsSync('.bowerrc')) bower_dir = require('.bowerrc').directory || bower_dir;
-  });
+
+    // Return if null
+    if (file.isNull()) {
+      stream.push(file);
+      return cb();
+    }
+
+    // No stream support (yet?)
+    if (file.isStream()) {
+      stream.emit("error", new gutil.PluginError({
+        plugin: PLUGIN_NAME,
+        message: "Streaming not supported"
+      }));
+
+      return cb();
+    }
+
+    readBowerJson(file.path);
+
+    return cb();
+  };
+
+  var generateVersions = function (cb) {
+    
+    var output = '';
+
+    if (options.variable) output += 'var ' + options.variable + ' = ';
+    output += JSON.stringify(versions);
+    if (options.variable) output += ';';
+
+    var file = new gutil.File({
+      path: '.',
+      contents: new Buffer(output)
+    });
+
+    stream.push(file);
+
+    return cb();
+  };
+
+  stream = through.obj(readVersions, generateVersions);
+
+  return stream;
 };
