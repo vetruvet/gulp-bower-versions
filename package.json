@@ -32,9 +32,6 @@
     "should": "^5.0.0",
     "vinyl": "^0.4.6"
   },
-  "peerDependencies": {
-    "gulp": "~0.4.5"
-  },
   "keywords": [
     "gulpplugin",
     "bower"
