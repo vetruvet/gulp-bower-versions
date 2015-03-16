@@ -1,7 +1,7 @@
 {
   "name": "gulp-bower-versions",
   "description": "Writes bower component versions to a file",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/vetruvet/gulp-bower-versions",
   "author": {
     "name": "Valeriy Trubachev",
