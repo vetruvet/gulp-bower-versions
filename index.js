@@ -31,7 +31,7 @@ module.exports = function (options) {
 
   var readVersions = function (file, enc, cb) {
     var bower_dir = 'bower_components';
-    if (fs.existsSync('.bowerrc')) bower_dir = require('.bowerrc').directory || bower_dir;
+    if (fs.existsSync('.bowerrc')) bower_dir = JSON.parse(fs.readFileSync('./.bowerrc')).directory || bower_dir;
 
     // Return if null
     if (file.isNull()) {
